@@ -22,7 +22,7 @@ from PIL import Image # if needed more can be importaed
 import imageio
 
 """# A simple 8-tile puzzle implementation with animation support"""
-
+!pip install IPython PIL 
 class EightTile():
     '''
     This class implements a basic 8-tile board when instantiated
@@ -413,19 +413,19 @@ class PuzzleSolver():
 
             del open_set[str(current_tile.current_state)]
 
-shuffle = 500
-challenge = EightTile()
-challenge.shuffle(shuffle)
-print(challenge)
-print(challenge.Board)
+# shuffle = 500
+# challenge = EightTile()
+# challenge.shuffle(shuffle)
+# print(challenge)
+# print(challenge.Board)
 
-solver = PuzzleSolver()
-commands = solver.solve_puzzle(challenge.Board)
-print(commands)
+# solver = PuzzleSolver()
+# commands = solver.solve_puzzle(challenge.Board)
+# print(commands)
 
-# eight_tile_objects = []
-moves = []
-for json_obj in commands:
-    moves.append(json_obj['dir'])
-    print(tabulate([[str(x).replace('0', '*') for x in c]  for c in np.ndarray.tolist(np.array(json_obj['node']))], tablefmt="grid", stralign="center"))
+# # eight_tile_objects = []
+# moves = []
+# for json_obj in commands:
+#     moves.append(json_obj['dir'])
+#     print(tabulate([[str(x).replace('0', '*') for x in c]  for c in np.ndarray.tolist(np.array(json_obj['node']))], tablefmt="grid", stralign="center"))
 
