@@ -216,60 +216,6 @@ class EightTile():
     def BoardImage(me):
         return EightTile.GenerateImage(me.Board)
 
-"""## Check out how suffle works"""
-
-# t = EightTile()
-# movez = t.shuffle(3, debugON=True) # for longer shuffle series consider not printing :)
-# print(movez)
-
-# """## undoing moves to go back to original"""
-
-# # apply all moves backwards
-# movez.reverse() # reverse the list first
-# for move in movez:
-#     move = np.array(move) * (-1)
-#     print(f'moving along: {move}')
-#     t.ApplyMove(move)
-#     print(t)
-
-# """## let's animate a solution after shuffling"""
-
-# tt = EightTile()
-# nS = 60
-# mvz = tt.shuffle(nS)
-# mvz.reverse()
-# mvz = np.array(mvz) * -1
-# print(tt)
-# print('solving... and generating animation')
-# frm = EightTile.GenerateAnimation(tt, mvz, f'puzzle{nS}', fps=50)
-# print(tt)
-
-# """#Play to solve the puzzle
-
-# """
-
-# # generate a puzzle instance
-# puzzle = EightTile()
-# a = '' # user choice to play
-
-# # change the number of shuffles to play with difficulty
-# puzzle.shuffle(5)
-# print(f'Move * by:\na or j for left\nd or l for right\ns or k for down\nw or i for up\n q is for quit\n')
-# print(puzzle)
-
-# dirz = {'a':[0, -1], 's':[1, 0], 'd':[0, 1], 'w':[-1, 0], 'j':[0, -1], 'k':[1, 0], 'l':[0, 1], 'i':[-1, 0], 'q':[0,0]}
-# while a != 'q':
-#     a = '' # enforce selection
-#     while a not in dirz.keys(): # enforce proper selection
-#         a = input('enter direction')
-#     clear_output(wait=True)
-#     puzzle.ApplyMove(dirz[a], True)
-#     if puzzle.isWinner:
-#         print('harika')
-#         a = 'q'
-#     print(puzzle)
-
-# print(puzzle.Board)
 
 """# Finally, write your own solver :)"""
 from copy import deepcopy
@@ -377,19 +323,23 @@ class Solve8():
 
         return path
 
-    def Solve(self, puzzle: np.ndarray):
+    def Solve(self, puzzle):
         """
         This function takes a puzzle as input and returns the solution.
-        it takes puzzle.Board np array 
         """
         # Convert numpy.ndarray to list of lists
+        puzzle = puzzle.Board
         puzzle_list = puzzle.tolist()
 
         # Solve the puzzle
         solution = self.main(puzzle_list)
 
         # Return the solution
-        return solution
+        movessss = []
+        for json_obj in solution:
+            movessss.append(json_obj['dir'])
+        del movessss[0]
+        return movessss
 
     def main(self, puzzle_list):
         """
@@ -413,3 +363,4 @@ class Solve8():
                 open_set[str(tile.current_state)] = tile
 
             del open_set[str(current_tile.current_state)]
+
