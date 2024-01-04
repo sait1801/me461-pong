@@ -275,7 +275,7 @@ class EightTile():
 from copy import deepcopy
 import math
 
-class PuzzleSolver():
+class Solve8():
     """
     This class is designed to solve the 8-puzzle problem using the A* algorithm.
     """
@@ -377,9 +377,10 @@ class PuzzleSolver():
 
         return path
 
-    def solve_puzzle(self, puzzle: np.ndarray):
+    def Solve(self, puzzle: np.ndarray):
         """
         This function takes a puzzle as input and returns the solution.
+        it takes puzzle.Board np array 
         """
         # Convert numpy.ndarray to list of lists
         puzzle_list = puzzle.tolist()
@@ -412,20 +413,3 @@ class PuzzleSolver():
                 open_set[str(tile.current_state)] = tile
 
             del open_set[str(current_tile.current_state)]
-
-shuffle = 500
-challenge = EightTile()
-challenge.shuffle(shuffle)
-print(challenge)
-print(challenge.Board)
-
-solver = PuzzleSolver()
-commands = solver.solve_puzzle(challenge.Board)
-print(commands)
-
-# eight_tile_objects = []
-moves = []
-for json_obj in commands:
-    moves.append(json_obj['dir'])
-    print(tabulate([[str(x).replace('0', '*') for x in c]  for c in np.ndarray.tolist(np.array(json_obj['node']))], tablefmt="grid", stralign="center"))
-
