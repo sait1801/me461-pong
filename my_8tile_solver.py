@@ -22,7 +22,7 @@ from PIL import Image # if needed more can be importaed
 import imageio
 
 """# A simple 8-tile puzzle implementation with animation support"""
-!pip install IPython PIL 
+
 class EightTile():
     '''
     This class implements a basic 8-tile board when instantiated
@@ -218,58 +218,58 @@ class EightTile():
 
 """## Check out how suffle works"""
 
-t = EightTile()
-movez = t.shuffle(3, debugON=True) # for longer shuffle series consider not printing :)
-print(movez)
+# t = EightTile()
+# movez = t.shuffle(3, debugON=True) # for longer shuffle series consider not printing :)
+# print(movez)
 
-"""## undoing moves to go back to original"""
+# """## undoing moves to go back to original"""
 
-# apply all moves backwards
-movez.reverse() # reverse the list first
-for move in movez:
-    move = np.array(move) * (-1)
-    print(f'moving along: {move}')
-    t.ApplyMove(move)
-    print(t)
+# # apply all moves backwards
+# movez.reverse() # reverse the list first
+# for move in movez:
+#     move = np.array(move) * (-1)
+#     print(f'moving along: {move}')
+#     t.ApplyMove(move)
+#     print(t)
 
-"""## let's animate a solution after shuffling"""
+# """## let's animate a solution after shuffling"""
 
-tt = EightTile()
-nS = 60
-mvz = tt.shuffle(nS)
-mvz.reverse()
-mvz = np.array(mvz) * -1
-print(tt)
-print('solving... and generating animation')
-frm = EightTile.GenerateAnimation(tt, mvz, f'puzzle{nS}', fps=50)
-print(tt)
+# tt = EightTile()
+# nS = 60
+# mvz = tt.shuffle(nS)
+# mvz.reverse()
+# mvz = np.array(mvz) * -1
+# print(tt)
+# print('solving... and generating animation')
+# frm = EightTile.GenerateAnimation(tt, mvz, f'puzzle{nS}', fps=50)
+# print(tt)
 
-"""#Play to solve the puzzle
+# """#Play to solve the puzzle
 
-"""
+# """
 
-# generate a puzzle instance
-puzzle = EightTile()
-a = '' # user choice to play
+# # generate a puzzle instance
+# puzzle = EightTile()
+# a = '' # user choice to play
 
-# change the number of shuffles to play with difficulty
-puzzle.shuffle(5)
-print(f'Move * by:\na or j for left\nd or l for right\ns or k for down\nw or i for up\n q is for quit\n')
-print(puzzle)
+# # change the number of shuffles to play with difficulty
+# puzzle.shuffle(5)
+# print(f'Move * by:\na or j for left\nd or l for right\ns or k for down\nw or i for up\n q is for quit\n')
+# print(puzzle)
 
-dirz = {'a':[0, -1], 's':[1, 0], 'd':[0, 1], 'w':[-1, 0], 'j':[0, -1], 'k':[1, 0], 'l':[0, 1], 'i':[-1, 0], 'q':[0,0]}
-while a != 'q':
-    a = '' # enforce selection
-    while a not in dirz.keys(): # enforce proper selection
-        a = input('enter direction')
-    clear_output(wait=True)
-    puzzle.ApplyMove(dirz[a], True)
-    if puzzle.isWinner:
-        print('harika')
-        a = 'q'
-    print(puzzle)
+# dirz = {'a':[0, -1], 's':[1, 0], 'd':[0, 1], 'w':[-1, 0], 'j':[0, -1], 'k':[1, 0], 'l':[0, 1], 'i':[-1, 0], 'q':[0,0]}
+# while a != 'q':
+#     a = '' # enforce selection
+#     while a not in dirz.keys(): # enforce proper selection
+#         a = input('enter direction')
+#     clear_output(wait=True)
+#     puzzle.ApplyMove(dirz[a], True)
+#     if puzzle.isWinner:
+#         print('harika')
+#         a = 'q'
+#     print(puzzle)
 
-print(puzzle.Board)
+# print(puzzle.Board)
 
 """# Finally, write your own solver :)"""
 from copy import deepcopy
@@ -413,19 +413,19 @@ class PuzzleSolver():
 
             del open_set[str(current_tile.current_state)]
 
-# shuffle = 500
-# challenge = EightTile()
-# challenge.shuffle(shuffle)
-# print(challenge)
-# print(challenge.Board)
+shuffle = 500
+challenge = EightTile()
+challenge.shuffle(shuffle)
+print(challenge)
+print(challenge.Board)
 
-# solver = PuzzleSolver()
-# commands = solver.solve_puzzle(challenge.Board)
-# print(commands)
+solver = PuzzleSolver()
+commands = solver.solve_puzzle(challenge.Board)
+print(commands)
 
-# # eight_tile_objects = []
-# moves = []
-# for json_obj in commands:
-#     moves.append(json_obj['dir'])
-#     print(tabulate([[str(x).replace('0', '*') for x in c]  for c in np.ndarray.tolist(np.array(json_obj['node']))], tablefmt="grid", stralign="center"))
+# eight_tile_objects = []
+moves = []
+for json_obj in commands:
+    moves.append(json_obj['dir'])
+    print(tabulate([[str(x).replace('0', '*') for x in c]  for c in np.ndarray.tolist(np.array(json_obj['node']))], tablefmt="grid", stralign="center"))
 
