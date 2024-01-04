@@ -203,6 +203,8 @@ class Solve8():
         """
         self.MOVEMENTS = {"w": [-1, 0], "s": [1, 0], "a": [0, -1], "d": [0, 1]}
         self.GOAL = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
+    def __str__(me):
+        return 'Seferogullari'
 
     class PuzzleTile:
         """
