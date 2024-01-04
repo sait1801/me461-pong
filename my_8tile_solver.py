@@ -310,7 +310,11 @@ class Solve8():
         for json_obj in solution:
             movessss.append(json_obj['dir'])
         del movessss[0]
-        return movessss
+        answer = []
+        for moving in movessss:
+            answer.append(self.MOVEMENTS[moving])
+
+        return answer
 
     def main(self, puzzle_list):
         """
