@@ -15,7 +15,6 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 from tabulate import tabulate
-from IPython.display import clear_output
 
 from PIL import Image, ImageDraw, ImageFont
 from PIL import Image # if needed more can be importaed
