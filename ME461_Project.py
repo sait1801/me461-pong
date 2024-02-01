@@ -8,6 +8,9 @@ from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWid
 from PyQt5.QtGui import QPixmap
 
 import cv2
+from sklearn.cluster import DBSCAN
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
 
 class Detection():
@@ -231,6 +234,8 @@ class Detection():
 
         :param photo_dir: directory of the captured photo
         :return: starter_puck_color, is_starter_puck_placed
+
+        todo: make the gui a selector rectangle for the starter puck 
         """
         try:
             # Load the image
@@ -240,22 +245,26 @@ class Detection():
             image_height, image_width, _ = image.shape
             # Assuming ratio_x is already set by DetectReference method
             puck_diameter_px = self.ratio_x
+            # print(f"puck_diameter_px : {puck_diameter_px}")
             puck_radius_px = puck_diameter_px / 2
             mid_bottom_x = image_width // 2
             mid_bottom_y = image_height - puck_diameter_px
 
             # Define the region of interest for the puck's expected location
-            roi = image[int(mid_bottom_y - puck_radius_px):int(mid_bottom_y + puck_radius_px),
-                        int(mid_bottom_x - puck_radius_px):int(mid_bottom_x + puck_radius_px)]
+            # roi = image[int(mid_bottom_y - puck_radius_px):int(mid_bottom_y + puck_radius_px),
+            #             int(mid_bottom_x - puck_radius_px):int(mid_bottom_x + puck_radius_px)]
+
+            roi = image[int(1150):int(1230),
+                        int(1485):int(1603)]
 
             # Convert the region of interest to HSV color space
             hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 
             # Define a mask to isolate the puck based on color
             # Note: The color range should be adjusted based on the lighting and puck color
-            lower_color = np.array([0, 100, 240])
+            lower_color = np.array([0, 0, 200])
             # Left here , detect the starting puck color amk
-            upper_color = np.array([255, 255, 255])
+            upper_color = np.array([180, 255, 255])
             mask = cv2.inRange(hsv_roi, lower_color, upper_color)
 
             # Check if there is a puck in the region of interest
@@ -273,7 +282,7 @@ class Detection():
 
         except Exception as e:
             # In case of an error, set the color to default and the flag to False
-            print("Error in DetectStarterPuck function")
+            print(f"Error in DetectStarterPuck function : {e}")
             self.starter_puck_color = (0, 0, 0)
             self.is_starter_puck_placed = False
             return self.starter_puck_color, self.is_starter_puck_placed
@@ -336,7 +345,7 @@ class Detection():
                 self.is_our_puck_detected = False
                 self.our_puck_pos_x = -1
                 self.our_puck_pos_y = -1
-
+            return 672, 573, True  # todo? buraya bakarlar amk sil burayi
             return self.our_puck_pos_x, self.our_puck_pos_y, self.is_our_puck_detected
 
         except Exception as e:
@@ -369,9 +378,39 @@ class PathFinder():
         self.circle_pos_y = circle_pos_y
         self.robot_side = robot_side
 
-    def FindPath(self, binary_image, objects):
+    def binarize_image(self, image_path):
+        # Load the image
+        image = cv2.imread(image_path)
+
+        # Convert the image to grayscale
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        # Binarize the image: keep black pixels black and turn other pixels white
+        _, binary_image = cv2.threshold(gray, 1, 255, cv2.THRESH_BINARY_INV)
+
+        return binary_image
+
+    def find_objects_with_dbscan(self, binary_image, eps=2, min_samples=5):
+        # Find the black pixels in the binary image
+        # Since we inverted the image, black is now 255
+        y_indices, x_indices = np.nonzero(binary_image == 255)
+        coordinates = np.column_stack([x_indices, y_indices])
+
+        # Apply DBSCAN to the coordinates of the black pixels
+        db = DBSCAN(eps=eps, min_samples=min_samples).fit(coordinates)
+        labels = db.labels_
+
+        # Group the coordinates by their cluster label
+        unique_labels = set(labels)
+        clusters = [coordinates[labels == label]
+                    for label in unique_labels if label != -1]
+
+        return clusters
+
+    def FindPath(self, binary_image, objects, centre_positions):
         # Assuming DetectCircle has been called and self.circle_pos_x, self.circle_pos_y have been set
-        center = np.array([self.circle_pos_x, self.circle_pos_y])
+        center = np.array(
+            [centre_positions[1], centre_positions[0]])  # in X,Y order
         radius = 3  # Radius can be adjusted based on the specific game rules
 
         # List to store the results
@@ -471,6 +510,38 @@ class PathFinder():
         distances = np.linalg.norm(aligned_points - start, axis=1)
         closest_point = aligned_points[np.argmin(distances)]
         return closest_point
+
+    def plot_path_on_image(self, image_path, path_data):
+        # Load the image
+        img = mpimg.imread(image_path)
+
+        # Plot the image
+        plt.imshow(img)
+
+        # Extract the points and final vector from the path data
+        points = path_data['points']
+        final_vector = path_data['fin_vector']
+        length = path_data['length']
+
+        # Plot the points and the lines between them
+        for i in range(len(points) - 1):
+            start = points[i]
+            end = points[i + 1]
+            plt.plot([start[0], end[0]], [start[1], end[1]], 'ro-')
+            plt.text(start[0], start[1], str(i + 1), fontsize=12, ha='right')
+
+        # Label the last point
+        plt.text(points[-1][0], points[-1][1],
+                 str(len(points)), fontsize=12, ha='right')
+
+        # Draw the final vector from the last point
+        final_point = points[-1] + length * final_vector * 0.25
+        plt.arrow(points[-1][0], points[-1][1], final_point[0] - points[-1][0],
+                  final_point[1] - points[-1][1], head_width=5, head_length=5, fc='green', ec='green')
+
+        # Display the plot
+        plt.show()
+        time.sleep(600)  # todo: amk
 
     def find_normal(self, points, incoming_vector):
         centroid = np.mean(points, axis=0)
@@ -618,9 +689,14 @@ if __name__ == "__main__":
         is_on_the_left, is_on_the_right, is_robot_detected = D.DetectMe(
             photo_dir)
 
+        print(
+            f"TEST1 - Side : rigth:{is_on_the_right}, left : {is_on_the_left}")
+
         # Find the position of the circle
         circle_pos_x, circle_pos_y, is_circle_detected = D.DetectCircle(
             photo_dir)
+
+        print(f"TEST2 -Circle Centroid : {circle_pos_x,circle_pos_y}")
 
         print("here1")
 
@@ -629,11 +705,15 @@ if __name__ == "__main__":
             break
     print("here2")
 
+    print(f"TEST3 -Reference ratio x,y: {ratio_x,ratio_y}")
+
     # Robot side
     if is_on_the_left:
         robot_side = "left"
     elif is_on_the_right:
         robot_side = "right"
+
+    print(f"TEST4 -Robot Side: {robot_side}")
 
     while True:
         # Take directory of the captured photo
@@ -648,6 +728,9 @@ if __name__ == "__main__":
         # If everything needed is detected break the loop. Otherwise, try to detect again.
         if is_color_detected:
             break
+    print(
+        f"TEST5 - Puck Color: ours: {our_puck_color}, opponents: {opponent_puck_color}")
+
     # Initialize PathFinder using ratio_x, ratio_y, circle_pos_x, circle_pos_y and robot_side
     PF = PathFinder(ratio_x, ratio_y, circle_pos_x, circle_pos_y, robot_side)
 
@@ -669,6 +752,7 @@ if __name__ == "__main__":
         if is_starter_puck_placed:
             break
     print("here5")
+    print(f"TEST6 - Starter Color:  {starter_puck_color}")
 
     # Color not needed after one time finded
     color_needed = False
@@ -695,12 +779,14 @@ if __name__ == "__main__":
     opponent_puck_positions = []
     print("here6")
 
+    counter = 0  # todo remove this
     while True:
 
         if is_our_turn == True and is_opponent_turn == False:
             while True:
                 # Take directory of the captured photo
-                photo_dir = PL.read_log()
+                # photo_dir = PL.read_log()
+                photo_dir = 'arena3_edited.jpeg'
 
                 # Find the position of our puck
                 our_puck_pos_x, our_puck_pos_y, is_our_pos_detected = D.DetectPosOurPuck(
@@ -710,18 +796,38 @@ if __name__ == "__main__":
                 if is_our_pos_detected:
                     break
 
+            print("here7")
+
             # Find the first path
-            path = PF.FindPath(our_puck_pos_x, our_puck_pos_y)
+            # binarized image, objects, centroid of circle
+            # Binarize the image
+            binarize_image = PF.binarize_image('arena3_edited.jpeg')
+
+            # Find objects using DBSCAN
+            clusters = PF.find_objects_with_dbscan(binary_image=binarize_image)
+            path = PF.FindPath(binarize_image, clusters,
+                               (our_puck_pos_x, our_puck_pos_y))
+
+            if counter == 0:
+                counter += 1
+                print(f"TEST7 - Path: {path[0]}")
+
+            # Test code
+            PF.plot_path_on_image('arena3_edited.jpeg', path[3])
 
             # Convert path knowledge to the variables to be sent to Pico
-            pwm_duty, pwm_freq, robot_angle = PF.Path2Variable(path)
+            pwm_duty, pwm_freq, robot_angle = PF.Path2Variable(path[3])
 
             # Draw path to captured photo
             PF.DrawPath(photo_dir)
+            print("here8")
 
             # Show path and angle on the Gui
             G = Gui()
+            print("here9")
+
             G.angle_gui(photo_dir, robot_angle)
+            print("here10")
 
             while True:
                 # Take directory of the captured photo
@@ -736,11 +842,11 @@ if __name__ == "__main__":
                 if is_starter_puck_placed:
                     break
 
-            # T.send(pwm_duty + ":" + pwm_freq)
+            # T.send(pwm_duty + ":" + pwm_freq) #todo: uncomment here
 
             while True:
                 # Take directory of the captured photo
-                # photo_dir = PL.read_log() // todo
+                # photo_dir = PL.read_log() // todo: uncommnet here
                 photo_dir = 'arena3_edited.jpeg'
 
                 # Is our turn done
@@ -755,7 +861,7 @@ if __name__ == "__main__":
         elif is_our_turn == False and is_opponent_turn == True:
             while True:
                 # Take directory of the captured photo
-                # photo_dir = PL.read_log() // todo
+                # photo_dir = PL.read_log() // todo: uncomment here
                 photo_dir = 'arena3_edited.jpeg'
 
                 # Is opponent turn done
