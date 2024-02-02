@@ -14,6 +14,47 @@ import matplotlib.image as mpimg
 import cProfile
 from numba import cuda
 
+import numpy as np
+import numba.cuda as cuda
+
+
+@cuda.jit
+def find_closest_aligned_point_kernel(start, direction, objects, results):
+    i = cuda.grid(1)
+    if i < objects.shape[0]:
+        point = objects[i]
+        y_on_line = (direction[1] / direction[0]) * \
+            (point[0] - start[0]) + start[1]
+        if abs(point[1] - y_on_line) <= 2:
+            point_vector = cuda.local.array(point.shape, point.dtype)
+            for i in range(point.shape[0]):
+                point_vector[i] = point[i] - start
+
+            dot_product = np.dot(point_vector, direction)
+            if dot_product > 0:
+                distance = np.linalg.norm(point_vector)
+                results[i] = distance, point  # Store distance and point
+
+
+def find_closest_aligned_point(start, direction, objects):
+    objects = np.array(objects)
+    start = np.array(start)
+    direction = np.array(direction)
+    all_points = np.concatenate(objects)
+
+    objects_device = cuda.to_device(all_points)
+    results_device = cuda.device_array_like(all_points)
+
+    threads_per_block = 32
+    blocks_per_grid = (
+        objects.shape[0] + threads_per_block - 1) // threads_per_block
+    find_closest_aligned_point_kernel[blocks_per_grid, threads_per_block](
+        start, direction, objects_device, results_device)
+
+    results = results_device.copy_to_host()
+    closest_distance, closest_point = np.amin(results, axis=0)
+    return closest_point
+
 
 class Detection():
 
@@ -436,8 +477,8 @@ class PathFinder():
 
                 for _ in range(5):
                     point_vectors.append(start_position)
-                    closest_aligned_point = self.find_closest_aligned_point(
-                        start_position, vector, objects)
+                    closest_aligned_point = find_closest_aligned_point(
+                        start=start_position, direction=vector, objects=objects)
 
                     if closest_aligned_point is None:
                         break
@@ -483,7 +524,7 @@ class PathFinder():
         bounde_rate = path['bounces']  # todo set pwm here =???dogukan
         return str(self.pwm_duty), str(self.pwm_freq), self.robot_angle
 
-    def DrawPath(self, photo_dir):  # todo burası doldurualcak
+    def DrawPath(self, photo_dir):
         pass
 
     def perpendicular_vector(self, v):
@@ -495,25 +536,6 @@ class PathFinder():
             if np.any(distances < threshold):
                 return i
         return None
-
-    def find_closest_aligned_point(self, start, direction, objects):
-        start = np.array(start)
-        direction = np.array(direction)
-        all_points = np.concatenate(objects)
-        y_on_line = (direction[1] / direction[0]) * \
-            (all_points[:, 0] - start[0]) + start[1]
-        close_points = all_points[np.isclose(
-            all_points[:, 1], y_on_line, atol=2)]
-        if len(close_points) == 0:
-            return None
-        point_vectors = close_points - start
-        dot_products = np.dot(point_vectors, direction)
-        aligned_points = close_points[dot_products > 0]
-        if len(aligned_points) == 0:
-            return None
-        distances = np.linalg.norm(aligned_points - start, axis=1)
-        closest_point = aligned_points[np.argmin(distances)]
-        return closest_point
 
     def plot_path_on_image(self, image_path, path_data, circle_pos_x, circle_pos_y):
         # Load the binarized image
@@ -867,7 +889,6 @@ if __name__ == "__main__":
             print("here9")
 
             G.angle_gui(photo_dir, robot_angle)
-            app.exec_()
             print("here10")
 
             while True:

@@ -483,7 +483,7 @@ class PathFinder():
         bounde_rate = path['bounces']  # todo set pwm here =???dogukan
         return str(self.pwm_duty), str(self.pwm_freq), self.robot_angle
 
-    def DrawPath(self, photo_dir):  # todo burası doldurualcak
+    def DrawPath(self, photo_dir):
         pass
 
     def perpendicular_vector(self, v):
@@ -867,7 +867,6 @@ if __name__ == "__main__":
             print("here9")
 
             G.angle_gui(photo_dir, robot_angle)
-            app.exec_()
             print("here10")
 
             while True:
